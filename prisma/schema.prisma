@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+///// จากที่เรา design database table ไว้
+model User {
+  id           Int       @id @default(autoincrement()) //@id = column primary key
+  firstName    String //ไม่ต้องกำหนดค่าเริ่มต้น เพราะมันเป็น null ไม่ได้
+  lastName     String //default = varchar 191
+  email        String?   @unique //login ด้วยอีเมลได้ แปลว่าอีเมลต้อง unique
+  mobile       String?   @unique // email & mobile เป็น optional เพราะเราให้ user เลือกกรอกแค่อย่างเดียว
+  password     String
+  profileImage String? //เก็บเป็นลิงค์ url ของรูปภาพ 
+  coverImage   String?
+  posts        Post[] // 1 user has many posts
+  comments     Comment[] // 1 user has many comments
+  likes        Like[] // 1 user has many likes
+  requesters   Friend[]  @relation("requester")
+  receivers    Friend[]  @relation("receiver")
+}
+
+model Post {
+  id        Int       @id @default(autoincrement())
+  message   String?
+  image     String? //post เราอาจจะไม่มีรูปก็ได้ แบบว่าอาจจะมีแค่ข้อความอย่างเดียวที่จะโพส
+  createdAt DateTime  @default(now()) //now() = ค่าเวลา ณ ปัจจุบันที่เค้ากดโพส
+  totalLike Int       @default(0)
+  userId    Int
+  user      User      @relation(fields: [userId], references: [id])
+  comments  Comment[] // 1 post has many comments
+  likes     Like[] // 1 post has many likes
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  message   String
+  createdAt DateTime @default(now())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  postId    Int
+  post      Post     @relation(fields: [postId], references: [id])
+}
+
+model Like {
+  id     Int  @id @default(autoincrement())
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+  postId Int
+  post   Post @relation(fields: [postId], references: [id])
+}
+
+model Friend {
+  id          Int          @id @default(autoincrement())
+  status      FriendStatus
+  createdAt   DateTime     @default(now())
+  requesterId Int
+  requester   User         @relation("requester", fields: [requesterId], references: [id])
+  receiverId  Int
+  receiver    User         @relation("receiver", fields: [receiverId], references: [id])
+}
+
+//enum คือค่าที่เป็นไปได้ ให้มีแค่นี้ตามที่เราตั้งไว้
+enum FriendStatus {
+  ACCEPTED
+  PENDING
+}
