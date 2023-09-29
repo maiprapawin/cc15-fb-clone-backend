@@ -35,7 +35,7 @@ exports.register = async (req, res, next) => {
     const user = await prisma.user.create({
       data: value,
     });
-    const payload = { userid: user.id };
+    const payload = { userId: user.id };
     const accessToken = jwt.sign(
       payload,
       process.env.JWT_SECRET_KEY || "dddssssdfjkdfjeieiei",
@@ -80,7 +80,7 @@ exports.login = async (req, res, next) => {
     }
     /// Client sends req to server, server validate login, compare password, if ok = gen accessToken and send back to client => client stores it in local storage
     // เราจะ gen access token เลยต้องมี payload
-    const payload = { userid: user.id };
+    const payload = { userId: user.id };
     const accessToken = jwt.sign(
       payload,
       process.env.JWT_SECRET_KEY || "dddssssdfjkdfjeieiei",
@@ -91,4 +91,8 @@ exports.login = async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+};
+
+exports.getMe = (req, res) => {
+  res.status(200).json({ user: req.user });
 };

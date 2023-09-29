@@ -18,3 +18,16 @@
     200 { accessToken: String, user: {id: Number, firstName: String.........} } 
     400 { message: String }
     500 { message: String }
+
+////////////////////////////
+
+-- Verify Access Token -- 
+Get Authenticated User
+(front send req ให้ server ตรวจสอบให้ว่า token นี้ใช้ได้ไหม)
+- Method: GET //get ข้อมูล user ที่ login อยู่
+- Path: /auth/me
+- HEADER: AUTHORIZATION Bearer ACCESS_TOKEN
+- RESPONSE:
+200 { user: {id: Number, firstName: String.........} } // แต่ต้องไม่มี password ติดไปด้วย เพราะมันจะไม่ปลอดภัย ถึงแม้จะอ่านไม่ออก แต่แฮคเกอร์ก็แกะได้
+401 { message: String} // ในกรณีที่ verify ไม่ผ่าน เช่น token หมดอายุ
+500 { message: String }
