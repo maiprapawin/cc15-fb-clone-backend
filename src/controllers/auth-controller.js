@@ -86,7 +86,8 @@ exports.login = async (req, res, next) => {
       process.env.JWT_SECRET_KEY || "dddssssdfjkdfjeieiei",
       { expiresIn: process.env.JWT_EXPIRE }
     );
-    res.status(200).json({ accessToken });
+    delete user.password;
+    res.status(200).json({ accessToken, user });
   } catch (err) {
     next(err);
   }
