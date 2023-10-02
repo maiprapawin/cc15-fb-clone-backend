@@ -6,8 +6,8 @@
 - Path: /auth/register
 - BODY: firstName, lastName, emailOrMobile (ส่งมาเลย เดี๋ยว server อ่านเองว่ามันเป็น email or mobile), password, confirmPassword
 - RESPONSE ที่เป็นไปได้ทั้งหมด:
-    201 { accessToken: String } eg. { accessToken: "<ค่า accessToken ที่เรา gen>" }
-    400 { message: String }
+    201 { accessToken: String , user: {id: Number, firstName: String.........} } eg. { accessToken: "<ค่า accessToken ที่เรา gen>" }
+    400 { message: String, emailOrMobileExist: true}
     500 { message: String }
     
 2. LOGIN
