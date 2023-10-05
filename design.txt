@@ -50,7 +50,7 @@ GET USER PROFILE BY id
 - Path: /user/:userId
 - HEADER: AUTHORIZATION Bearer ACCESS_TOKEN
 - RESPONSE
-200 { user: {id: Number, firstName: String, ...}, status: String} (status: "REQUESTER/RECEIVER/...มีได้ 5 ค่า ต้องเป็น 1 ในห้าค่า)
+200 { user: {id: Number, firstName: String, ...}, status: String, friends: [{id: Number, firstName: String, ...}]} (status: "REQUESTER/RECEIVER/...มีได้ 5 ค่า ต้องเป็น 1 ในห้าค่า)
 401 { message: String }
 500 { message: String }
 
@@ -66,15 +66,32 @@ GET USER PROFILE BY id
 401 { message: String } = unauthenticated
 500 { message: String } = server error
 
+------------------------------------------------------------------------------------
+
 2. DELETE FRIEND (UNFRIEND) = ใช้ได้ทั้งกรณีที่เค้า reject การขอเป็นเพื่อน และการ unfriend 
+
+     2.1 REJECT REQUEST
 - DELETE
-- Path: /friend/:targetUserId
+- Path: /friend/:requesterId/reject
+
+     2.2 CANCEL REQUEST
+- DELETE
+- Path: /friend/:receiverId/cancel
+
+     2.3 UNFRIEND 
+- DELETE
+- Path: /friend/:friendId/unfriend
+
+        -------------------
+
 - HEADER: AUTHORIZATION Bearer ACCESS_TOKEN
 - RESPONSE
 200 { message: String }
 400 { message: String } = ขอ user ที่ไม่มี
 401 { message: String } = unauthenticated
 500 { message: String } = server error
+
+------------------------------------------------------------------------------------
 
 3. ACCEPT FRIEND (status update)
 - PATCH

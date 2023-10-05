@@ -1,9 +1,11 @@
+const { exist } = require("joi");
 const { STATUS_PENDING, STATUS_ACCEPTED } = require("../config/constant");
 const prisma = require("../models/prisma");
 const createError = require("../utils/create-error");
 const {
   checkReceiverIdSchema,
   checkRequesterIdSchema,
+  checkFriendIdSchema,
 } = require("../validators/user-validator");
 
 ///// 1. REQUEST FRIEND /////
@@ -93,6 +95,106 @@ exports.acceptRequest = async (req, res, next) => {
       },
     });
     res.status(200).json({ message: "accepted" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+///// 3. DELETE FRIEND//////
+
+//// 3.1 Reject ////
+exports.rejectRequest = async (req, res, next) => {
+  try {
+    const { value, error } = checkRequesterIdSchema.validate(req.params);
+    if (error) {
+      return next(error);
+    }
+    const existRelationship = await prisma.friend.findFirst({
+      where: {
+        receiverId: req.user.id,
+        requesterId: value.requesterId,
+        status: STATUS_PENDING, // การที่จะ reject request ได้ status จะต้อง pending อยู่
+      },
+    });
+
+    if (!existRelationship) {
+      return next(createError("ralationship does not exist", 400));
+    }
+
+    // ถ้ามี relationship กันอยู่ = ลบ friend req
+    await prisma.friend.delete({
+      where: {
+        id: existRelationship.id,
+      },
+    });
+
+    res.status(200).json({ message: "rejected" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+//// 3.2 Cancel ////
+exports.cancelRequest = async (req, res, next) => {
+  try {
+    const { value, error } = checkReceiverIdSchema.validate(req.params);
+    if (error) {
+      return next(error);
+    }
+    const existRelationship = await prisma.friend.findFirst({
+      where: {
+        requesterId: req.user.id,
+        receiverId: value.receiverId,
+        status: STATUS_PENDING,
+      },
+    });
+
+    if (!existRelationship) {
+      return next(createError("ralationship does not exist", 400));
+    }
+
+    await prisma.friend.delete({
+      where: {
+        id: existRelationship.id,
+      },
+    });
+
+    res.status(200).json({ message: "success cancellation" });
+  } catch (err) {
+    next(err);
+  }
+};
+
+//// 3.3 Unfriend ////
+exports.unfriend = async (req, res, next) => {
+  try {
+    const { value, error } = checkFriendIdSchema.validate(req.params);
+    if (error) {
+      return next(error);
+    }
+
+    const existRelationship = await prisma.friend.findFirst({
+      where: {
+        OR: [
+          // เป็น OR เพราะสามารถเป็น user 1 ขอ user 2 หรืือ 2 ขอ 1 ก็ได้
+          { requesterId: req.user.id, receiverId: value.friendId },
+          { requesterId: value.friendId, receiverId: req.user.id },
+        ],
+        status: STATUS_ACCEPTED, //ต้องเป็นเพื่อนกันอยู่แล้วถึงจะ unfriend ได้
+      },
+    });
+
+    if (!existRelationship) {
+      return next(createError("ralationship does not exist", 400));
+    }
+
+    await prisma.friend.delete({
+      where: {
+        id: existRelationship.id,
+      },
+    });
+
+    res.status(200).json({ message: "friendship terminated" });
   } catch (err) {
     next(err);
   }

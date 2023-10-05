@@ -51,6 +51,50 @@ const getTargetUserStatusWithAuthUser = async (targetUserId, authUserId) => {
   return RECEIVER;
 };
 
+const getTargetUserFriends = async (targetUserId) => {
+  // Logic ในการหาเพื่อน = STATUS: ACCEPTED AND (REQUESTER_ID = targetUserId OR RECEIVER_ID = targetUserId)
+  const relationships = await prisma.friend.findMany({
+    where: {
+      status: STATUS_ACCEPTED,
+      OR: [{ requesterId: targetUserId }, { receiverId: targetUserId }],
+    },
+    select: {
+      //ตามด้วยชื่อ key ที่เราจะ include
+      requester: {
+        select: {
+          //เราไม่อยากให้ password มาด้วย เลยต้องมาลิสแต่ละอันที่จะเอาแทน
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          mobile: true,
+          profileImage: true,
+          coverImage: true,
+        },
+      },
+      receiver: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          mobile: true,
+          profileImage: true,
+          coverImage: true,
+        },
+      },
+    },
+  });
+  console.log(relationships);
+
+  // เช็คฝั่ง requester ว่าไอดีเท่ากับ targetUserId ใข่หรือไม่ ถ้าใช่ จะต้อง return ค่า el.receiver
+  const friends = relationships.map((el) =>
+    el.requester.id === targetUserId ? el.receiver : el.requester
+  );
+  // console.log(friends);
+  return friends;
+};
+
 exports.updateProfile = async (req, res, next) => {
   try {
     // ถ้าจะเอารูปมาใช้ ต้องใช้จาก req.file แต่ต้องเป็น .single สำหรับรูปเดียวเท่านั้น
@@ -120,13 +164,15 @@ exports.getUserById = async (req, res, next) => {
     });
 
     let status = null; //เอาไว้แก้ bug เรื่อง status กับคนที่ไม่มีอยู่จริง = ถ้า user ไม่มีค่า หรือหาไม่เจอ status ควรเป็น null
+    let friends = null;
     if (user) {
       //ต้องใส่ if(user) เพราะว่าถ้าไม่เจอ แล้วเป็น null มันจะทำให้ error
       delete user.password;
       status = await getTargetUserStatusWithAuthUser(userId, req.user.id);
+      friends = await getTargetUserFriends(userId);
     }
 
-    res.status(200).json({ user, status });
+    res.status(200).json({ user, status, friends });
     //ผ่าน key ที่ชื่อ user และ value จาก user ข้างบน, status คือต้องบอกว่า user เป็นอะไรกัน
   } catch (err) {
     next(err);
