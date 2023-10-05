@@ -4,6 +4,52 @@ const createError = require("../utils/create-error");
 const { upload } = require("../utils/cloudinary-service");
 const prisma = require("../models/prisma");
 const { checkUserIdSchema } = require("../validators/user-validator");
+const {
+  AUTH_USER,
+  UNKNOWN,
+  STATUS_ACCEPTED,
+  FRIEND,
+  REQUESTER,
+  RECEIVER,
+} = require("../config/constant");
+
+const getTargetUserStatusWithAuthUser = async (targetUserId, authUserId) => {
+  ////// STATUS มีได้ 5 อัน (ในไฟล์ constant.js) //////
+
+  //// Status 1 ////
+  if (targetUserId === authUserId) {
+    return AUTH_USER;
+  }
+
+  const relationship = await prisma.friend.findFirst({
+    // หาว่า userId กับ req.user.id (= คนที่ลอคอินอยู่) มีความสัมพันธ์กันหรือเปล่า
+    where: {
+      OR: [
+        { requesterId: targetUserId, receiverId: authUserId },
+        { requesterId: authUserId, receiverId: targetUserId },
+      ],
+    },
+  });
+
+  //// Status 2 ////
+  // ถ้าเป็น null
+  if (!relationship) {
+    return UNKNOWN;
+  }
+
+  //// Status 3 ////
+  if (relationship.status === STATUS_ACCEPTED) {
+    return FRIEND;
+  }
+
+  //// Status 4 ////
+  if (relationship.requesterId === authUserId) {
+    return REQUESTER;
+  }
+
+  //// Status 5 ////
+  return RECEIVER;
+};
 
 exports.updateProfile = async (req, res, next) => {
   try {
@@ -72,8 +118,16 @@ exports.getUserById = async (req, res, next) => {
         id: userId,
       },
     });
-    if (user) delete user.password; //ต้องใส่ if(user) เพราะว่าถ้าไม่เจอ แล้วเป็น null มันจะทำให้ error
-    res.status(200).json({ user }); //ผ่าน key ที่ชื่อ user และ value จาก user ข้างบน
+
+    let status = null; //เอาไว้แก้ bug เรื่อง status กับคนที่ไม่มีอยู่จริง = ถ้า user ไม่มีค่า หรือหาไม่เจอ status ควรเป็น null
+    if (user) {
+      //ต้องใส่ if(user) เพราะว่าถ้าไม่เจอ แล้วเป็น null มันจะทำให้ error
+      delete user.password;
+      status = await getTargetUserStatusWithAuthUser(userId, req.user.id);
+    }
+
+    res.status(200).json({ user, status });
+    //ผ่าน key ที่ชื่อ user และ value จาก user ข้างบน, status คือต้องบอกว่า user เป็นอะไรกัน
   } catch (err) {
     next(err);
   }

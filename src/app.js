@@ -9,6 +9,7 @@ const errorMiddleware = require("./middlewares/error");
 const rateLimitMiddleware = require("./middlewares/rate-limit");
 const authRoute = require("./routes/auth-route");
 const userRoute = require("./routes/user-route");
+const friendRoute = require("./routes/friend-route");
 
 const app = express();
 
@@ -19,9 +20,10 @@ app.use(rateLimitMiddleware); //ไว้ล่าง cors เพราะมั
 app.use(express.json()); // Express - json เพื่อพาส body
 app.use(express.static("public")); //กรณีที่อยากเอารูปที่อยู่ใน public ไปใช้ ก็สามารถ req ไฟล์ในนี้ไปใช้ได้ อะไรก็ตามที่อยู่ใน public ให้บุคคลภายนอกเข้าถึงไฟล์ในนี้ได้
 
-///
+/// Routes ที่เราสร้าง
 app.use("/auth", authRoute);
 app.use("/user", userRoute);
+app.use("/friend", friendRoute);
 
 /// Middleware ที่เราสร้างเอง
 app.use(notFoundMiddleWare);
