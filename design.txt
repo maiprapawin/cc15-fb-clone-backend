@@ -117,3 +117,27 @@ CREATE POST
 400 { message: String } 
 401 { message: String } 
 500 { message: String } 
+
+////////////////////////////
+
+GET ALL POST INCLUDE POST friends
+- Method: GET
+- Path: /post/friend (เอาของเพื่อนด้วย)
+- HEADER: AUTHORIZATION Bearer ACCESS_TOKEN
+- RESPONSE
+200 { posts: [ {id: Number, message: String, image: String, user: {id: Number, firstname: String, .....}}] } //array ของ post obj
+400 { message: String } 
+401 { message: String } 
+500 { message: String } 
+
+////////////////////////////
+
+TOGGLE LIKE
+- Method: POST
+- Path: /post/:postId/like
+- HEADER: AUTHORIZATION Bearer ACCESS_TOKEN
+- RESPONSE
+201 { message: String }
+400 { message: String } 
+401 { message: String } 
+500 { message: String } 

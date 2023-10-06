@@ -1,6 +1,23 @@
+const fs = require("fs/promises");
 const createError = require("../utils/create-error");
 const { upload } = require("../utils/cloudinary-service");
 const prisma = require("../models/prisma");
+const { STATUS_ACCEPTED } = require("../config/constant");
+
+//fn ที่หา id ของเพื่อนของ targetUserId
+const getFriendIds = async (targetUserId) => {
+  const relationship = await prisma.friend.findMany({
+    where: {
+      OR: [{ receiverId: targetUserId }, { requesterId: targetUserId }],
+      status: STATUS_ACCEPTED,
+    },
+  });
+
+  const friendIds = relationship.map((el) =>
+    el.requesterId === targetUserId ? el.receiverId : el.requesterId
+  );
+  return friendIds;
+};
 
 exports.createPost = async (req, res, next) => {
   try {
@@ -28,6 +45,48 @@ exports.createPost = async (req, res, next) => {
       data: data,
     });
     res.status(201).json({ message: "post created" });
+  } catch (err) {
+    next(err);
+  } finally {
+    //เอาไว้ลบรูปใน public
+    if (req.file) {
+      fs.unlink(req.file.path);
+    }
+  }
+};
+
+exports.getAllPostIncludeFriendPost = async (req, res, next) => {
+  try {
+    //หา id ของเพื่อนทั้งหมด (ไปเขียน fn ไว้ข้างยน)
+    const friendIds = await getFriendIds(req.user.id); // = targetUser คนที่เป็น user ที่ลอคอินตอนนี้ // [3, 9, 1]
+    const posts = await prisma.post.findMany({
+      // SELECT * FROM posts WHERE userId in (3, 9, 1)
+      where: {
+        userId: {
+          in: [...friendIds, req.user.id], //เอาของเก่ามา แล้วเอาของตัวเองเข้าไป
+        },
+      },
+      orderBy: {
+        createdAt: "desc", //เอา post ที่ create ล่าสุดไว้ข้างบน
+      },
+      include: {
+        user: {
+          select: {
+            //เอาแค่บางอัน ไม่เอา password
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+          },
+        },
+        likes: {
+          select: {
+            userId: true,
+          },
+        },
+      },
+    });
+    res.status(200).json({ posts });
   } catch (err) {
     next(err);
   }
