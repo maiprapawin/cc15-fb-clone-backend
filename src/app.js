@@ -10,6 +10,7 @@ const rateLimitMiddleware = require("./middlewares/rate-limit");
 const authRoute = require("./routes/auth-route");
 const userRoute = require("./routes/user-route");
 const friendRoute = require("./routes/friend-route");
+const postRoute = require("./routes/post-route");
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use(express.static("public")); //กรณีที่อยากเอา�
 app.use("/auth", authRoute);
 app.use("/user", userRoute);
 app.use("/friend", friendRoute);
+app.use("/post", postRoute);
 
 /// Middleware ที่เราสร้างเอง
 app.use(notFoundMiddleWare);
