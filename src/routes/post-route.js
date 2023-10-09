@@ -23,4 +23,6 @@ router.get(
 //การจัดการ like ของ post post นึง
 router.post("/:postId/like", authenticateMiddleware, likeController.toggleLike);
 
+router.delete("/:postId", authenticateMiddleware, postController.deletePost);
+
 module.exports = router;

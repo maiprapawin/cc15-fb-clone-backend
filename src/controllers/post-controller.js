@@ -3,6 +3,7 @@ const createError = require("../utils/create-error");
 const { upload } = require("../utils/cloudinary-service");
 const prisma = require("../models/prisma");
 const { STATUS_ACCEPTED } = require("../config/constant");
+const { checkPostIdSchema } = require("../validators/post-validator");
 
 //fn ที่หา id ของเพื่อนของ targetUserId
 const getFriendIds = async (targetUserId) => {
@@ -102,6 +103,39 @@ exports.getAllPostIncludeFriendPost = async (req, res, next) => {
       },
     });
     res.status(200).json({ posts });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// delete post ตรงกล่อง drop down ...
+exports.deletePost = async (req, res, next) => {
+  try {
+    // validate postId //เอา schema ที่เรา create ในไฟล์ post-validator มาเรียกใช้ method validate
+    const { value, error } = checkPostIdSchema.validate(req.params);
+    if (error) {
+      return next(error);
+    }
+
+    // เช็คก่อนว่ามี post ที่เราอยากลบอยู่ไหมใน database
+    const existPost = await prisma.post.findFirst({
+      where: {
+        id: value.postId,
+        userId: req.user.id, //ต้องเป็น post ของคนที่สร้างเท่านั้น //คนที่ลบคือเจ้าของโพส
+      },
+    });
+
+    if (!existPost) {
+      return next(createError("cannot delete this post", 400));
+    }
+
+    //ถ้าผ่านข้างบนมาได้ สั่งลบ
+    await prisma.post.delete({
+      where: {
+        id: existPost.id,
+      },
+    });
+    res.status(200).json({ message: "deleted" });
   } catch (err) {
     next(err);
   }
