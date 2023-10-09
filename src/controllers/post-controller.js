@@ -41,10 +41,25 @@ exports.createPost = async (req, res, next) => {
     }
 
     // จะ create ลง table ใน db
-    await prisma.post.create({
+    const post = await prisma.post.create({
       data: data,
+      include: {
+        user: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+          },
+        },
+        likes: {
+          select: {
+            userId: true,
+          },
+        },
+      },
     });
-    res.status(201).json({ message: "post created" });
+    res.status(201).json({ message: "post created", post }); //ส่งค่า post ลงไป res ด้วย
   } catch (err) {
     next(err);
   } finally {
